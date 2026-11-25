@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b111b">
+  <title>经典力学沙盒 · Newton Lab</title>
+  <link rel="stylesheet" href="./style.css">
+  <script defer src="./physics.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">N</span>
+    <div><h1>经典力学沙盒</h1><span class="brand-en">NEWTON LAB</span></div>
+  </div>
+  <div class="playback">
+    <span class="run-dot" id="run-dot"></span>
+    <button id="play" class="primary"><span class="play-icon">▶</span><span>开始</span></button>
+    <button id="step" title="前进一步">单步</button>
+    <button id="reset" title="恢复编辑后的初态">重置</button>
+    <label class="time-speed" title="调整模拟时间流逝速度，不改变物理计算步长">
+      <span>时间流速</span>
+      <select id="time-speed" aria-label="时间流逝速度">
+        <option value="0.1">0.1×</option>
+        <option value="0.25">0.25×</option>
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option>
+        <option value="2">2×</option>
+        <option value="4">4×</option>
+        <option value="8">8×</option>
+      </select>
+    </label>
+    <span id="time">0.000 <small>s</small></span>
+  </div>
+</header>
+<main>
+  <section class="workspace">
+    <div class="editor-bar">
+      <div class="scene-title"><span class="live-dot"></span><strong id="scene-name">木板滑球</strong><span class="edit-tag">编辑模式</span></div>
+      <div class="file-actions">
+        <select id="preset" aria-label="实验预设"><option value="">载入实验预设…</option></select>
+        <button id="save" title="保存初始场景">保存</button>
+        <button id="load" title="加载 JSON 场景">加载</button>
+        <input id="file" type="file" accept=".json,application/json" hidden>
+      </div>
+    </div>
+    <div class="stage-layout">
+      <nav id="tools" aria-label="器材工具">
+        <div class="tool-group">
+          <span class="tool-caption">操作</span>
+          <button data-tool="select" class="active"><span class="tool-icon">↖</span><span>选择</span><kbd>V</kbd></button>
+        </div>
+        <div class="tool-group">
+          <span class="tool-caption">物体</span>
+          <button data-tool="ball"><span class="tool-icon ball-icon"></span><span>小球</span><kbd>B</kbd></button>
+          <button data-tool="board"><span class="tool-icon">▰</span><span>木板</span></button>
+          <button data-tool="wall"><span class="tool-icon">╱</span><span>墙壁</span></button>
+          <button data-tool="anchor"><span class="tool-icon">⌖</span><span>锚点</span><kbd>A</kbd></button>
+        </div>
+        <div class="tool-group">
+          <span class="tool-caption">轨道系统</span>
+          <button data-tool="track"><span class="tool-icon">━</span><span>直线轨道</span><kbd>T</kbd></button>
+          <button data-tool="arc"><span class="tool-icon">⌒</span><span>弯道轨道</span><kbd>C</kbd></button>
+          <button data-tool="slider"><span class="tool-icon">▣</span><span>滑块</span><kbd>S</kbd></button>
+        </div>
+        <div class="tool-group">
+          <span class="tool-caption">连接</span>
+          <button data-tool="spring"><span class="tool-icon">∿</span><span>弹簧</span><kbd>F</kbd></button>
+          <button data-tool="rope"><span class="tool-icon">╱</span><span>绳子</span><kbd>R</kbd></button>
+        </div>
+        <button id="delete" class="delete-tool"><span class="tool-icon">×</span><span>删除所选</span><kbd>Del</kbd></button>
+      </nav>
+      <div id="canvas-wrap">
+        <canvas id="world" aria-label="力学模拟世界"></canvas>
+        <div class="canvas-topline">
+          <span class="canvas-badge"><span class="badge-dot"></span><span id="object-count">0 个物体</span></span>
+          <label class="snap-toggle" title="自动吸附木板、墙壁与轨道端点"><input id="snap-enabled" type="checkbox" checked><span></span>自动吸附</label>
+        </div>
+        <div id="cursor-pos" class="cursor-pos">x 0.00&nbsp;&nbsp;y 0.00</div>
+        <div id="snap-label" class="snap-label" hidden>已吸附</div>
+      </div>
+    </div>
+    <footer>
+      <div class="zoom-controls"><button id="zoom-out" title="缩小">−</button><button id="zoom-fit">全图</button><button id="zoom-in" title="放大">＋</button></div>
+      <span id="status">选择器材开始搭建，或载入一个实验预设</span>
+      <span class="hint">右键平移 · 滚轮缩放 · 空格播放 · Esc 取消</span>
+    </footer>
+  </section>
+  <aside>
+    <section class="properties inspector-main">
+      <div class="section-heading"><div><span class="eyebrow">INSPECTOR</span><h2 id="property-title">器材参数</h2></div><span id="property-mode" class="mode-chip">未选择</span></div>
+      <form id="properties" autocomplete="off"><div class="empty-state"><span>↖</span><p>选择左侧器材开始放置<br>或点击画布中的物体</p></div></form>
+    </section>
+    <details class="state-panel" open>
+      <summary><span>实时状态</span><small>运动数据</small></summary>
+      <pre id="state">未选中器材</pre>
+    </details>
+    <details class="environment-panel">
+      <summary><span>环境与场</span><small>重力 · 电场 · 阻力</small></summary>
+      <form id="environment">
+        <label class="check"><input id="gravity-enabled" type="checkbox" checked> 启用重力</label>
+        <div class="field"><label for="gravity">重力加速度 g</label><div class="number-unit"><input id="gravity" name="g" type="number" step="any" value="9.8"><span>m/s²</span></div></div>
+        <div class="field"><label for="drag">空气阻力</label><input id="drag" name="airDrag" type="number" min="0" step="any" value="0"></div>
+        <div class="field"><label for="electric-x">电场 Ex</label><div class="number-unit"><input id="electric-x" name="electricX" type="number" step="any" value="0"><span>N/C</span></div></div>
+        <div class="field"><label for="electric-y">电场 Ey</label><div class="number-unit"><input id="electric-y" name="electricY" type="number" step="any" value="0"><span>N/C</span></div></div>
+        <div class="field"><label for="coulomb">库仑常量 k</label><input id="coulomb" name="coulombConstant" type="number" min="0" step="any" value="8990000000"></div>
+        <div class="field"><label for="gravitation">引力常量 G</label><input id="gravitation" name="gravitationalConstant" type="number" min="0" step="any" value="0.00000000006674"></div>
+        <button class="apply" type="submit">应用环境参数</button>
+      </form>
+    </details>
+  </aside>
+</main>
+</body>
+</html>
